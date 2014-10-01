@@ -8,7 +8,9 @@ import com.amap.api.location.LocationManagerProxy;
 import com.amap.api.location.LocationProviderProxy;
 import com.amapv2.apis.util.AMapUtil;
 import com.amapv2.apis.util.ToastUtil;
-
+import com.amap.navi.*;
+import com.amap.navi.demo.activity.NaviStartActivity;
+import com.example.test.*;
 import android.location.Location;
 import android.os.Bundle;
 import android.os.Handler;
@@ -27,6 +29,7 @@ import android.graphics.BitmapFactory;
 import android.graphics.Color;
 import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.Drawable;
+import android.util.Log;
 import android.view.Gravity;
 import android.view.KeyEvent;
 import android.view.Menu;
@@ -47,10 +50,12 @@ import android.widget.Toast;
 
 
 
+@SuppressLint("NewApi")
 public class MainActivity extends Activity{
     private Button bt;
     private dbHelper db;
 	private Cursor myCursor;
+	private String lalti;//传输到navi的坐标
 	private ListView myListView;
 	private int _id;
 	private String[] actions = new String[] { "设置", "关于我们", "应用介绍" };
@@ -60,6 +65,7 @@ public class MainActivity extends Activity{
     private AMapLocation aMapLocation;// 用于判断定位超时
     private String desc=null;
     private Handler handler = new Handler();
+    private SplitLag sl=new SplitLag();//分割出经度纬度
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
@@ -122,6 +128,29 @@ public class MainActivity extends Activity{
 					}
 					
 				};
+				android.content.DialogInterface.OnClickListener  NaviListener= new android.content.DialogInterface.OnClickListener(){
+
+					@Override
+					public void onClick(DialogInterface arg0, int arg1) {
+						// TODO Auto-generated method stub
+						 Intent mainIntent = new Intent(MainActivity.this,NaviStartActivity.class); 
+						 
+						 Bundle bundle = new Bundle(); 
+//						  
+						 double[] lg;
+						 lg=sl.getLag(lalti);
+						 double b=116.430947;
+						 double a=39.991927;
+						 bundle.putDouble("ati", lg[1]);	
+						 bundle.putDouble("log", lg[0]);						
+                          mainIntent.putExtras(bundle); 
+						  
+						 startActivity(mainIntent);
+			             finish();
+					}
+					
+				};
+				
 //				android.content.DialogInterface.OnClickListener  listener1= new android.content.DialogInterface.OnClickListener(){
 //
 //					@Override
@@ -167,16 +196,19 @@ public class MainActivity extends Activity{
 //					
 //				};
 
-			    
+				lalti=myCursor.getString(3);
 				new AlertDialog.Builder(MainActivity.this)
 				.setTitle(myCursor.getString(1)).setView(img).setMessage(myCursor.getString(3))
 				
-				.setPositiveButton("删除",listener).setNegativeButton("确定", null)
+				.setPositiveButton("删除",listener).setNeutralButton("寻车导航", NaviListener).setNegativeButton("确定", null)
 				.show();
+				
 				//myEditText.setText(myCursor.getString(1));
 		
 			}
 		});
+      
+        
         /*
          * action bar
          */
@@ -187,13 +219,12 @@ public class MainActivity extends Activity{
      	ActionBar actionBar = getActionBar();
      	
      	actionBar.setBackgroundDrawable(new ColorDrawable(Color.parseColor("blue")));
-		//actionBar.setSplitBackgroundDrawable(new ColorDrawable(Color.parseColor("blue")));
-		//actionBar.setStackedBackgroundDrawable(new ColorDrawable(Color.parseColor("blue")));
+		
      	/** Enabling dropdown list navigation for the action bar */
 		
      	getActionBar().setNavigationMode(ActionBar.NAVIGATION_MODE_LIST);
 
-		/** Defining Navigation listener */
+		
 		OnNavigationListener navigationListener = new OnNavigationListener() {
 
 			@Override
